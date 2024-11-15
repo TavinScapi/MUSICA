@@ -14,20 +14,23 @@
             margin: 0;
             background: linear-gradient(135deg, #4c669f, #3b5998, #192f6a);
             color: white;
+            flex-direction: column;
         }
 
         h1 {
             text-align: center;
             margin-bottom: 20px;
+            font-size: 2rem;
         }
 
         .tuner {
             text-align: center;
             background-color: rgba(255, 255, 255, 0.1);
-            padding: 30px;
+            padding: 2rem;
             border-radius: 15px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-            width: 350px;
+            width: 100%;
+            max-width: 350px;
         }
 
         .indicator-container {
@@ -60,7 +63,7 @@
         }
 
         .scale span {
-            font-size: 14px;
+            font-size: 1rem;
             opacity: 0.8;
         }
 
@@ -76,19 +79,19 @@
         }
 
         .tuner-info {
-            font-size: 20px;
+            font-size: 1.25rem;
             margin: 10px 0;
         }
 
         .status {
-            font-size: 18px;
+            font-size: 1.125rem;
             margin: 15px 0;
             font-weight: bold;
         }
 
         button {
             padding: 10px 20px;
-            font-size: 16px;
+            font-size: 1rem;
             cursor: pointer;
             border: none;
             background-color: #28a745;
@@ -110,10 +113,58 @@
             background-color: #c82333;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.75rem;
+            }
+
             .tuner {
-                padding: 20px;
+                padding: 1.5rem;
                 width: 90%;
+            }
+
+            .tuner-info {
+                font-size: 1.125rem;
+            }
+
+            .status {
+                font-size: 1rem;
+            }
+
+            button {
+                font-size: 0.875rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .tuner {
+                padding: 1rem;
+                width: 90%;
+            }
+
+            .indicator-container {
+                height: 100px;
+            }
+
+            .scale span {
+                font-size: 0.875rem;
+            }
+
+            .tuner-info {
+                font-size: 1rem;
+            }
+
+            .status {
+                font-size: 0.875rem;
+            }
+
+            button {
+                padding: 8px 16px;
+                font-size: 0.875rem;
             }
         }
     </style>
@@ -242,46 +293,10 @@
             if (rms < 0.01) return -1;
 
             let r1 = 0, r2 = size - 1, thres = 0.2;
-            for (let i = 0; i < size / 2; i++) {
-                if (Math.abs(buffer[i]) < thres) {
-                    r1 = i;
-                    break;
-                }
-            }
-            for (let i = 1; i < size / 2; i++) {
-                if (Math.abs(buffer[size - i]) < thres) {
-                    r2 = size - i;
-                    break;
-                }
-            }
 
-            buffer = buffer.slice(r1, r2);
-            size = buffer.length;
+            while (r2 > r1 && Math.abs(buffer[r2]) < thres) r2--;
 
-            let c = new Array(size).fill(0);
-            for (let i = 0; i < size; i++) {
-                for (let j = 0; j < size - i; j++) {
-                    c[i] = c[i] + buffer[j] * buffer[j + i];
-                }
-            }
-
-            let d = 0;
-            while (c[d] > c[d + 1]) d++;
-            let maxval = -1, maxpos = -1;
-            for (let i = d; i < size; i++) {
-                if (c[i] > maxval) {
-                    maxval = c[i];
-                    maxpos = i;
-                }
-            }
-
-            let T0 = maxpos;
-            let x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
-            let a = (x1 + x3 - 2 * x2) / 2;
-            let b = (x3 - x1) / 2;
-            if (a) T0 = T0 - b / (2 * a);
-
-            return sampleRate / T0;
+            return sampleRate / r2;
         }
 
         function goBack() {
