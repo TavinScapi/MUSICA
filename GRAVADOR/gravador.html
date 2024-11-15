@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gravador de Áudio para Músicos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      text-align: center;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .controls button, .save button, .quality button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: #fff;
+    }
+
+    .controls button:disabled, .save button:disabled {
+      background-color: #ccc;
+    }
+
+    audio {
+      margin-top: 20px;
+      width: 100%;
+    }
+
+    .volume {
+      margin-top: 20px;
+    }
+
+    .quality {
+      margin-top: 20px;
+    }
+
+    .waveform {
+      margin-top: 20px;
+      height: 100px;
+      background: #e0e0e0;
+      border-radius: 5px;
+    }
+
+    .countdown {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Gravador de Áudio</h1>
+    
+    <!-- Controles de Gravação -->
+    <div class="controls">
+      <button id="startBtn">Iniciar Gravação</button>
+      <button id="stopBtn" disabled>Parar Gravação</button>
+    </div>
+
+    <!-- Contagem Regressiva -->
+    <div id="countdown" class="countdown"></div>
+
+    <!-- Controle de Volume -->
+    <div class="volume">
+      <label for="volumeControl">Volume</label>
+      <input type="range" id="volumeControl" min="0" max="1" step="0.1" value="1">
+    </div>
+
+    <!-- Escolher Qualidade -->
+    <div class="quality">
+      <button id="highQuality">Alta Qualidade (320 kbps)</button>
+      <button id="lowQuality">Baixa Qualidade (128 kbps)</button>
+    </div>
+
+    <!-- Visualização da Forma de Onda -->
+    <div id="waveform" class="waveform"></div>
+
+    <!-- Player de Áudio -->
+    <audio id="audioPlayer" controls></audio>
+
+    <!-- Botão de Salvar -->
+    <div class="save">
+      <button id="saveBtn" disabled>Salvar Gravação</button>
+    </div>
+  </div>
+
+  <script>
+    let mediaRecorder;
+    let audioChunks = [];
+    let audioUrl;
+    let audioPlayer = document.getElementById("audioPlayer");
+    let startBtn = document.getElementById("startBtn");
+    let stopBtn = document.getElementById("stopBtn");
+    let saveBtn = document.getElementById("saveBtn");
+    let volumeControl = document.getElementById("volumeControl");
+    let highQualityBtn = document.getElementById("highQuality");
+    let lowQualityBtn = document.getElementById("lowQuality");
+    let countdownDisplay = document.getElementById("countdown");
+    let waveformDisplay = document.getElementById("waveform");
+
+    let currentQuality = 128; // Padrão: 128 kbps para MP3
+    let countdownTimer;
+    let countdownValue = 3; // Contagem regressiva de 3 segundos
+
+    startBtn.addEventListener("click", startRecording);
+    stopBtn.addEventListener("click", stopRecording);
+    saveBtn.addEventListener("click", saveRecording);
+    volumeControl.addEventListener("input", adjustVolume);
+    highQualityBtn.addEventListener("click", () => setQuality(320));
+    lowQualityBtn.addEventListener("click", () => setQuality(128));
+
+    async function startRecording() {
+      // Iniciar a contagem regressiva
+      startBtn.disabled = true;
+      countdownDisplay.textContent = countdownValue;
+      countdownTimer = setInterval(() => {
+        countdownDisplay.textContent = countdownValue;
+        if (countdownValue === 0) {
+          clearInterval(countdownTimer);
+          countdownDisplay.textContent = "";
+          beginRecording();
+        }
+        countdownValue--;
+      }, 1000);
+    }
+
+    function beginRecording() {
+      audioChunks = [];
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = event => {
+          audioChunks.push(event.data);
+          updateWaveform(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+          audioUrl = URL.createObjectURL(audioBlob);
+          audioPlayer.src = audioUrl;
+          saveBtn.disabled = false;
+        };
+
+        mediaRecorder.start();
+        stopBtn.disabled = false;
+      });
+    }
+
+    function stopRecording() {
+      mediaRecorder.stop();
+      stopBtn.disabled = true;
+    }
+
+    function saveRecording() {
+      const mp3Encoder = new window.LAME({
+        bitrate: currentQuality,
+        channels: 1,
+        samplerate: 44100
+      });
+
+      const wavData = new Blob(audioChunks, { type: 'audio/wav' });
+      const reader = new FileReader();
+
+      reader.onload = function(event) {
+        const arrayBuffer = event.target.result;
+        const mp3Data = mp3Encoder.encodeWAV(new Uint8Array(arrayBuffer));
+        const mp3Blob = new Blob([mp3Data], { type: 'audio/mp3' });
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(mp3Blob);
+        link.download = "gravacao.mp3";
+        link.click();
+      };
+
+      reader.readAsArrayBuffer(wavData);
+    }
+
+    function adjustVolume() {
+      audioPlayer.volume = volumeControl.value;
+    }
+
+    function setQuality(bitrate) {
+      currentQuality = bitrate;
+      alert(`Qualidade de gravação ajustada para ${bitrate} kbps`);
+    }
+
+    function updateWaveform(data) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const audioBuffer = event.target.result;
+        // Aqui você pode usar uma biblioteca como wavesurfer.js para desenhar a forma de onda
+        const waveformWidth = waveformDisplay.offsetWidth;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        const audioData = new Uint8Array(audioBuffer);
+        const waveformData = [];
+        for (let i = 0; i < audioData.length; i++) {
+          waveformData.push(audioData[i]);
+        }
+
+        // Desenhando a forma de onda (simplificada)
+        ctx.fillStyle = "#007bff";
+        const step = Math.ceil(waveformData.length / waveformWidth);
+        for (let i = 0; i < waveformWidth; i++) {
+          const value = waveformData[i * step];
+          const height = (value / 255) * waveformDisplay.offsetHeight;
+          ctx.fillRect(i, waveformDisplay.offsetHeight - height, 1, height);
+        }
+
+        waveformDisplay.innerHTML = "";
+        waveformDisplay.appendChild(canvas);
+      };
+      reader.readAsArrayBuffer(new Blob([data]));
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/lamejs@3.0.0/lame.min.js"></script>
+</body>
+</html>
