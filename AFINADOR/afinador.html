@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,138 +7,172 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-        }
-
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
+            background-color: #f5f5f5;
         }
 
         h1 {
-            margin-bottom: 20px;
+            text-align: center;
         }
 
-        .corda-info {
-            margin-top: 20px;
+        .tuner {
+            text-align: center;
+            background-color: #eee;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         button {
             padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
             background-color: #4CAF50;
             color: white;
-            border: none;
             border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
             margin-top: 20px;
         }
 
-        button:active {
+        button:hover {
             background-color: #45a049;
         }
 
-        #status {
-            margin-top: 10px;
+        #note {
+            font-size: 24px;
             font-weight: bold;
         }
 
-        #nota {
-            font-size: 30px;
-            font-weight: bold;
+        #frequency {
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div>
         <h1>Afinador de Violão</h1>
-        <div class="corda-info">
-            <span id="corda">Corda 6 (E)</span>
-            <div id="nota"></div>
-            <div id="status"></div>
+        <div class="tuner">
+            <p id="note">Nota: --</p>
+            <p id="frequency">Frequência: -- Hz</p>
+            <button onclick="startTuner()">Iniciar Afinador</button>
         </div>
-        <button id="iniciar">Iniciar Microfone</button>
     </div>
 
     <script>
-        const iniciarBtn = document.getElementById("iniciar");
-        const cordaSpan = document.getElementById("corda");
-        const notaDiv = document.getElementById("nota");
-        const statusDiv = document.getElementById("status");
-
-        const notas = {
-            "E": 82.41,
-            "A": 110.00,
-            "D": 146.83,
-            "G": 196.00,
-            "B": 246.94,
-            "e": 329.63
+        const notes = {
+            E4: 329.63,
+            B3: 246.94,
+            G3: 196.00,
+            D3: 146.83,
+            A2: 110.00,
+            E2: 82.41
         };
 
-        let currentCorda = 6; // Começa com a corda 6
-
-        // Função para iniciar a captura do microfone
-        async function iniciarMicrofone() {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const analyser = audioContext.createAnalyser();
-            const microphone = audioContext.createMediaStreamSource(stream);
-            microphone.connect(analyser);
-
-            analyser.fftSize = 2048;
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-
-            function detectarNota() {
-                analyser.getByteFrequencyData(dataArray);
-                const maxIndex = dataArray.indexOf(Math.max(...dataArray));
-                const frequency = maxIndex * audioContext.sampleRate / analyser.fftSize;
-
-                const nota = obterNota(frequency);
-                if (nota) {
-                    const dif = Math.abs(notas[nota] - frequency);
-                    const limiar = 5; // margem para comparação
-                    if (dif < limiar) {
-                        statusDiv.textContent = `Afinação OK!`;
-                        statusDiv.style.color = "green";
-                    } else {
-                        statusDiv.textContent = `Ajuste a corda!`;
-                        statusDiv.style.color = "red";
-                    }
-                    notaDiv.textContent = `Nota detectada: ${nota}`;
-                } else {
-                    notaDiv.textContent = `Nota não detectada`;
-                }
-
-                requestAnimationFrame(detectarNota);
+        function startTuner() {
+            if (!navigator.mediaDevices.getUserMedia) {
+                alert("Seu navegador não suporta áudio.");
+                return;
             }
 
-            detectarNota();
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                
+                const microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+
+                const dataArray = new Float32Array(analyser.fftSize);
+                detectPitch(analyser, dataArray);
+            }).catch(err => {
+                alert("Erro ao acessar o microfone: " + err.message);
+            });
         }
 
-        // Função para obter a nota mais próxima
-        function obterNota(frequency) {
-            for (const [nota, freq] of Object.entries(notas)) {
-                if (Math.abs(freq - frequency) < 5) {
-                    return nota;
+        function detectPitch(analyser, dataArray) {
+            analyser.getFloatTimeDomainData(dataArray);
+
+            const ac = autoCorrelate(dataArray, analyser.context.sampleRate);
+            if (ac !== -1) {
+                const frequency = Math.round(ac);
+                displayFrequency(frequency);
+                const closestNote = findClosestNote(frequency);
+                document.getElementById("note").textContent = `Nota: ${closestNote}`;
+            }
+
+            requestAnimationFrame(() => detectPitch(analyser, dataArray));
+        }
+
+        function displayFrequency(frequency) {
+            document.getElementById("frequency").textContent = `Frequência: ${frequency} Hz`;
+        }
+
+        function findClosestNote(frequency) {
+            let closestNote = "";
+            let minDifference = Infinity;
+
+            for (let note in notes) {
+                const diff = Math.abs(frequency - notes[note]);
+                if (diff < minDifference) {
+                    minDifference = diff;
+                    closestNote = note;
                 }
             }
-            return null;
+            return closestNote;
         }
 
-        iniciarBtn.addEventListener("click", function () {
-            iniciarBtn.disabled = true;
-            iniciarMicrofone();
-            cordaSpan.textContent = `Corda ${currentCorda} (${Object.keys(notas)[currentCorda - 1]})`;
-        });
+        // Função para calcular a autocorrelação
+        function autoCorrelate(buffer, sampleRate) {
+            let size = buffer.length;
+            let rms = 0;
+
+            for (let i = 0; i < size; i++) {
+                rms += buffer[i] * buffer[i];
+            }
+            rms = Math.sqrt(rms / size);
+            if (rms < 0.01) return -1;
+
+            let r1 = 0, r2 = size - 1, thres = 0.2;
+            for (let i = 0; i < size / 2; i++) {
+                if (Math.abs(buffer[i]) < thres) {
+                    r1 = i;
+                    break;
+                }
+            }
+            for (let i = 1; i < size / 2; i++) {
+                if (Math.abs(buffer[size - i]) < thres) {
+                    r2 = size - i;
+                    break;
+                }
+            }
+
+            buffer = buffer.slice(r1, r2);
+            size = buffer.length;
+
+            let c = new Array(size).fill(0);
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size - i; j++) {
+                    c[i] = c[i] + buffer[j] * buffer[j + i];
+                }
+            }
+
+            let d = 0;
+            while (c[d] > c[d + 1]) d++;
+            let maxval = -1, maxpos = -1;
+            for (let i = d; i < size; i++) {
+                if (c[i] > maxval) {
+                    maxval = c[i];
+                    maxpos = i;
+                }
+            }
+
+            let T0 = maxpos;
+            return sampleRate / T0;
+        }
     </script>
 </body>
 </html>
