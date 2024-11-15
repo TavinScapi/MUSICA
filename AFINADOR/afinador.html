@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Afinador de Violão</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .corda-info {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        button:active {
+            background-color: #45a049;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        #nota {
+            font-size: 30px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Afinador de Violão</h1>
+        <div class="corda-info">
+            <span id="corda">Corda 6 (E)</span>
+            <div id="nota"></div>
+            <div id="status"></div>
+        </div>
+        <button id="iniciar">Iniciar Microfone</button>
+    </div>
+
+    <script>
+        const iniciarBtn = document.getElementById("iniciar");
+        const cordaSpan = document.getElementById("corda");
+        const notaDiv = document.getElementById("nota");
+        const statusDiv = document.getElementById("status");
+
+        const notas = {
+            "E": 82.41,
+            "A": 110.00,
+            "D": 146.83,
+            "G": 196.00,
+            "B": 246.94,
+            "e": 329.63
+        };
+
+        let currentCorda = 6; // Começa com a corda 6
+
+        // Função para iniciar a captura do microfone
+        async function iniciarMicrofone() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioContext.createAnalyser();
+            const microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+
+            analyser.fftSize = 2048;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function detectarNota() {
+                analyser.getByteFrequencyData(dataArray);
+                const maxIndex = dataArray.indexOf(Math.max(...dataArray));
+                const frequency = maxIndex * audioContext.sampleRate / analyser.fftSize;
+
+                const nota = obterNota(frequency);
+                if (nota) {
+                    const dif = Math.abs(notas[nota] - frequency);
+                    const limiar = 5; // margem para comparação
+                    if (dif < limiar) {
+                        statusDiv.textContent = `Afinação OK!`;
+                        statusDiv.style.color = "green";
+                    } else {
+                        statusDiv.textContent = `Ajuste a corda!`;
+                        statusDiv.style.color = "red";
+                    }
+                    notaDiv.textContent = `Nota detectada: ${nota}`;
+                } else {
+                    notaDiv.textContent = `Nota não detectada`;
+                }
+
+                requestAnimationFrame(detectarNota);
+            }
+
+            detectarNota();
+        }
+
+        // Função para obter a nota mais próxima
+        function obterNota(frequency) {
+            for (const [nota, freq] of Object.entries(notas)) {
+                if (Math.abs(freq - frequency) < 5) {
+                    return nota;
+                }
+            }
+            return null;
+        }
+
+        iniciarBtn.addEventListener("click", function () {
+            iniciarBtn.disabled = true;
+            iniciarMicrofone();
+            cordaSpan.textContent = `Corda ${currentCorda} (${Object.keys(notas)[currentCorda - 1]})`;
+        });
+    </script>
+</body>
+</html>
