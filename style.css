@@ -1,57 +1,238 @@
-/* Tema claro */
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Corpo do site */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
+    background-color: #fff;
     color: #333;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+/* Cabeçalho */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #f5f5f5;
+    border-bottom: 2px solid #ddd;
+}
+
+.header .logo h1 {
+    font-size: 1.8em;
+    color: #333;
+}
+
+.navbar ul {
+    list-style: none;
+    display: flex;
+}
+
+.navbar ul li {
+    margin-right: 20px;
+}
+
+.navbar ul li a {
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+    transition: color 0.3s;
+}
+
+.navbar ul li a:hover {
+    color: #007bff;
+}
+
+/* Alternar tema */
+.theme-toggle button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* Conteúdo Principal */
+.main-content {
+    padding: 40px 20px;
     text-align: center;
 }
 
-header h1 {
-    font-size: 2em;
-    margin-top: 1em;
+.hero {
+    max-width: 800px;
+    margin: 0 auto;
 }
 
-button {
-    padding: 10px 20px;
+.hero h2 {
+    font-size: 2.5em;
+    color: #333;
+}
+
+.hero p {
     font-size: 1.2em;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.buttons button {
+    background-color: #007bff;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
     margin: 10px;
-    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
 }
 
-/* Tema escuro */
-.dark-theme {
+.buttons button:hover {
+    background-color: #0056b3;
+}
+
+/* Rodapé */
+.footer {
+    background-color: #f5f5f5;
+    padding: 20px;
+    text-align: center;
+    border-top: 2px solid #ddd;
+}
+
+.footer p {
+    color: #666;
+}
+
+/* Estilo escuro para alternar tema */
+body.dark-mode {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+body.dark-mode .header {
     background-color: #333;
-    color: #f0f0f0;
 }
 
-.theme-toggle {
-    position: absolute;
-    top: 10px;
-    right: 10px;
+body.dark-mode .navbar ul li a {
+    color: #e0e0e0;
 }
 
-.notes button {
-    margin: 5px;
-    padding: 10px 15px;
-    font-size: 1em;
-    cursor: pointer;
+body.dark-mode .navbar ul li a:hover {
+    color: #007bff;
 }
 
-.tuner-visualizer {
-    position: relative;
-    width: 300px;
-    height: 10px;
-    background-color: #ddd;
-    margin: 20px auto;
+body.dark-mode .hero h2 {
+    color: #e0e0e0;
 }
 
-#indicator {
-    position: absolute;
-    width: 5px;
-    height: 100%;
-    background-color: red;
-    left: 50%;
-    transform: translateX(-50%);
-    transition: left 0.1s ease;
+body.dark-mode .hero p {
+    color: #b0b0b0;
 }
 
+body.dark-mode .buttons button {
+    background-color: #007bff;
+    color: white;
+}
+
+body.dark-mode .footer {
+    background-color: #333;
+}
+
+body.dark-mode .footer p {
+    color: #b0b0b0;
+}
+
+/* Media Queries para Responsividade */
+
+/* Para dispositivos móveis */
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .navbar ul {
+        flex-direction: column;
+        padding: 10px 0;
+    }
+
+    .navbar ul li {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+
+    .hero h2 {
+        font-size: 2em;
+    }
+
+    .hero p {
+        font-size: 1em;
+        margin-bottom: 20px;
+    }
+
+    .buttons button {
+        width: 100%;
+        padding: 15px;
+        font-size: 1.1em;
+    }
+}
+
+/* Para tablets (largura entre 768px e 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .navbar ul {
+        flex-direction: column;
+        padding: 10px 0;
+    }
+
+    .navbar ul li {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+
+    .hero h2 {
+        font-size: 2.2em;
+    }
+
+    .hero p {
+        font-size: 1.1em;
+    }
+
+    .buttons button {
+        width: 45%;
+        padding: 12px;
+        font-size: 1.2em;
+    }
+}
+
+/* Para desktops grandes (largura acima de 1024px) */
+@media (min-width: 1024px) {
+    .navbar ul {
+        display: flex;
+    }
+
+    .navbar ul li {
+        margin-right: 20px;
+    }
+
+    .hero h2 {
+        font-size: 2.5em;
+    }
+
+    .hero p {
+        font-size: 1.2em;
+    }
+
+    .buttons button {
+        padding: 15px 30px;
+        font-size: 1.2em;
+    }
+}
