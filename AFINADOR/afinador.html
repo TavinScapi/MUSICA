@@ -12,19 +12,78 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #4c669f, #3b5998, #192f6a);
+            color: white;
         }
 
         h1 {
             text-align: center;
+            margin-bottom: 20px;
         }
 
         .tuner {
             text-align: center;
-            background-color: #eee;
-            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            width: 350px;
+        }
+
+        .indicator-container {
+            position: relative;
+            height: 120px;
+            width: 100%;
+            margin: 30px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .indicator-line {
+            position: absolute;
+            height: 120px;
+            width: 2px;
+            background-color: white;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0.6;
+        }
+
+        .scale {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .scale span {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .needle {
+            position: absolute;
+            height: 120px;
+            width: 2px;
+            background-color: red;
+            left: 50%;
+            transform-origin: bottom;
+            transform: translateX(-50%) rotate(0deg);
+            transition: transform 0.05s ease-out;
+        }
+
+        .tuner-info {
+            font-size: 20px;
+            margin: 10px 0;
+        }
+
+        .status {
+            font-size: 18px;
+            margin: 15px 0;
+            font-weight: bold;
         }
 
         button {
@@ -32,23 +91,30 @@
             font-size: 16px;
             cursor: pointer;
             border: none;
-            background-color: #4CAF50;
+            background-color: #28a745;
             color: white;
             border-radius: 5px;
-            margin-top: 20px;
+            transition: background-color 0.3s;
+            margin: 10px 5px;
         }
 
         button:hover {
-            background-color: #45a049;
+            background-color: #218838;
         }
 
-        #note {
-            font-size: 24px;
-            font-weight: bold;
+        .back-button {
+            background-color: #dc3545;
         }
 
-        #frequency {
-            font-size: 18px;
+        .back-button:hover {
+            background-color: #c82333;
+        }
+
+        @media (max-width: 600px) {
+            .tuner {
+                padding: 20px;
+                width: 90%;
+            }
         }
     </style>
 </head>
@@ -56,9 +122,20 @@
     <div>
         <h1>Afinador de Violão</h1>
         <div class="tuner">
-            <p id="note">Nota: --</p>
-            <p id="frequency">Frequência: -- Hz</p>
-            <button onclick="startTuner()">Iniciar Afinador</button>
+            <div class="indicator-container">
+                <div class="indicator-line"></div>
+                <div class="scale">
+                    <span>-50</span>
+                    <span>0</span>
+                    <span>+50</span>
+                </div>
+                <div class="needle" id="needle"></div>
+            </div>
+            <p id="note" class="tuner-info">Nota: --</p>
+            <p id="frequency" class="tuner-info">Frequência: -- Hz</p>
+            <p id="status" class="status">Afinação: --</p>
+            <button id="start-button" onclick="startTuner()">Iniciar Afinador</button>
+            <button class="back-button" onclick="goBack()">Voltar</button>
         </div>
     </div>
 
@@ -73,6 +150,10 @@
         };
 
         function startTuner() {
+            const button = document.getElementById("start-button");
+            button.disabled = true;
+            button.textContent = "Afinador em execução...";
+
             if (!navigator.mediaDevices.getUserMedia) {
                 alert("Seu navegador não suporta áudio.");
                 return;
@@ -82,7 +163,7 @@
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const analyser = audioContext.createAnalyser();
                 analyser.fftSize = 2048;
-                
+
                 const microphone = audioContext.createMediaStreamSource(stream);
                 microphone.connect(analyser);
 
@@ -99,20 +180,17 @@
             const ac = autoCorrelate(dataArray, analyser.context.sampleRate);
             if (ac !== -1) {
                 const frequency = Math.round(ac);
-                displayFrequency(frequency);
-                const closestNote = findClosestNote(frequency);
-                document.getElementById("note").textContent = `Nota: ${closestNote}`;
+                updateTuner(frequency);
             }
 
             requestAnimationFrame(() => detectPitch(analyser, dataArray));
         }
 
-        function displayFrequency(frequency) {
+        function updateTuner(frequency) {
             document.getElementById("frequency").textContent = `Frequência: ${frequency} Hz`;
-        }
 
-        function findClosestNote(frequency) {
             let closestNote = "";
+            let targetFrequency = 0;
             let minDifference = Infinity;
 
             for (let note in notes) {
@@ -120,12 +198,39 @@
                 if (diff < minDifference) {
                     minDifference = diff;
                     closestNote = note;
+                    targetFrequency = notes[note];
                 }
             }
-            return closestNote;
+
+            document.getElementById("note").textContent = `Nota: ${closestNote}`;
+
+            const diff = frequency - targetFrequency;
+            updateNeedle(diff);
+            updateStatus(diff);
         }
 
-        // Função para calcular a autocorrelação
+        function updateNeedle(diff) {
+            const maxRotation = 45; // Ângulo máximo de rotação
+            const sensitivity = 1.2; // Sensibilidade ajustada
+            let rotation = Math.max(-maxRotation, Math.min(maxRotation, diff * sensitivity));
+            const needle = document.getElementById("needle");
+            needle.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+        }
+
+        function updateStatus(diff) {
+            const status = document.getElementById("status");
+            if (Math.abs(diff) < 1) {
+                status.textContent = "Afinação: Perfeita!";
+                status.style.color = "#28a745";
+            } else if (diff < 0) {
+                status.textContent = "Afinação: Muito Baixa";
+                status.style.color = "#ffc107";
+            } else {
+                status.textContent = "Afinação: Muito Alta";
+                status.style.color = "#dc3545";
+            }
+        }
+
         function autoCorrelate(buffer, sampleRate) {
             let size = buffer.length;
             let rms = 0;
@@ -171,7 +276,16 @@
             }
 
             let T0 = maxpos;
+            let x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
+            let a = (x1 + x3 - 2 * x2) / 2;
+            let b = (x3 - x1) / 2;
+            if (a) T0 = T0 - b / (2 * a);
+
             return sampleRate / T0;
+        }
+
+        function goBack() {
+            window.history.back();
         }
     </script>
 </body>
