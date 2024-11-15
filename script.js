@@ -9,3 +9,7 @@ function openMetronome() {
 function openTuner() {
     window.location.href = "AFINADOR/afinador.html"; // Página de afinador
 }
+
+function openRecorder() {
+    window.location.href = "GRAVADOR/gravador.html"; // Página de afinador
+}
