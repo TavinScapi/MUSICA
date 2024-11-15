@@ -3,7 +3,7 @@ function toggleTheme() {
 }
 
 function openMetronome() {
-    window.location.href = "metronome.html"; // Página de metrônomo
+    window.location.href = "METRONOMO/metronomo.html"; // Página de metrônomo
 }
 
 function openTuner() {
