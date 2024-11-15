@@ -7,5 +7,5 @@ function openMetronome() {
 }
 
 function openTuner() {
-    window.location.href = "tuner.html"; // Página de afinador
+    window.location.href = "AFINADOR/afinador.html"; // Página de afinador
 }
