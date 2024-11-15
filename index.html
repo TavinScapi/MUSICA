@@ -5,20 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal do Músico</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
-    <div class="theme-toggle">
-        <button onclick="toggleTheme()">Alternar Tema</button>
-    </div>
-
-    <header>
-        <h1>Bem-vindo ao Portal do Músico</h1>
+    <header class="header">
+        <div class="logo">
+            <h1>Portal do Músico</h1>
+        </div>
+        <nav class="navbar">
+            <ul>
+                <li><a href="#">Início</a></li>
+                <li><a href="#">Aulas</a></li>
+                <li><a href="#">Notícias</a></li>
+                <li><a href="#">Fórum</a></li>
+                <li><a href="#">Loja</a></li>
+            </ul>
+        </nav>
+        <div class="theme-toggle">
+            <button onclick="toggleTheme()">🌙</button>
+        </div>
     </header>
 
-    <main>
-        <button onclick="openMetronome()">Metrônomo</button>
-        <button onclick="openTuner()">Afinador de Violão</button>
+    <main class="main-content">
+        <div class="hero">
+            <h2>Explore Ferramentas Musicais</h2>
+            <p>Encontre recursos como metronomo, afinador e muito mais!</p>
+            <div class="buttons">
+                <button onclick="openMetronome()">Metrônomo</button>
+                <button onclick="openTuner()">Afinador de Violão</button>
+            </div>
+        </div>
     </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Portal do Músico | Todos os direitos reservados</p>
+        </div>
+    </footer>
 
     <script src="script.js"></script>
 </body>
