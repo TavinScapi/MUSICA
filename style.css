@@ -29,3 +29,29 @@ button {
     top: 10px;
     right: 10px;
 }
+
+.notes button {
+    margin: 5px;
+    padding: 10px 15px;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+.tuner-visualizer {
+    position: relative;
+    width: 300px;
+    height: 10px;
+    background-color: #ddd;
+    margin: 20px auto;
+}
+
+#indicator {
+    position: absolute;
+    width: 5px;
+    height: 100%;
+    background-color: red;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: left 0.1s ease;
+}
+
