@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -169,6 +170,7 @@
         }
     </style>
 </head>
+
 <body>
     <div>
         <h1>Afinador de Violão</h1>
@@ -200,6 +202,10 @@
             E2: 82.41
         };
 
+        let lastNote = "--"; // Armazena a última nota detectada
+        let lastFrequency = "--"; // Armazena a última frequência detectada
+        let lastStatus = "Aguardando som..."; // Armazena o último status
+
         function startTuner() {
             const button = document.getElementById("start-button");
             button.disabled = true;
@@ -229,9 +235,11 @@
             analyser.getFloatTimeDomainData(dataArray);
 
             const ac = autoCorrelate(dataArray, analyser.context.sampleRate);
-            if (ac !== -1) {
+            if (ac > 0) {
                 const frequency = Math.round(ac);
                 updateTuner(frequency);
+            } else {
+                preserveLastTunerDisplay(); // Mantém os valores da última nota detectada
             }
 
             requestAnimationFrame(() => detectPitch(analyser, dataArray));
@@ -253,6 +261,9 @@
                 }
             }
 
+            lastNote = closestNote;
+            lastFrequency = `${frequency} Hz`;
+
             document.getElementById("note").textContent = `Nota: ${closestNote}`;
 
             const diff = frequency - targetFrequency;
@@ -271,32 +282,53 @@
         function updateStatus(diff) {
             const status = document.getElementById("status");
             if (Math.abs(diff) < 1) {
-                status.textContent = "Afinação: Perfeita!";
+                lastStatus = "Afinação: Perfeita!";
                 status.style.color = "#28a745";
             } else if (diff < 0) {
-                status.textContent = "Afinação: Muito Baixa";
+                lastStatus = "Afinação: Muito Baixa";
                 status.style.color = "#ffc107";
             } else {
-                status.textContent = "Afinação: Muito Alta";
+                lastStatus = "Afinação: Muito Alta";
                 status.style.color = "#dc3545";
             }
+            status.textContent = lastStatus;
+        }
+
+        function preserveLastTunerDisplay() {
+            document.getElementById("frequency").textContent = `Frequência: ${lastFrequency}`;
+            document.getElementById("note").textContent = `Nota: ${lastNote}`;
+            document.getElementById("status").textContent = lastStatus;
+
+            const needle = document.getElementById("needle");
+            needle.style.transform = `translateX(-50%) rotate(0deg)`; // Agulha volta ao centro
         }
 
         function autoCorrelate(buffer, sampleRate) {
             let size = buffer.length;
             let rms = 0;
 
+            // Calcula a energia do sinal (Root Mean Square)
             for (let i = 0; i < size; i++) {
                 rms += buffer[i] * buffer[i];
             }
             rms = Math.sqrt(rms / size);
+
+            // Retorna -1 se o volume for muito baixo
             if (rms < 0.01) return -1;
 
             let r1 = 0, r2 = size - 1, thres = 0.2;
 
+            // Encontra o início do sinal significativo
+            while (r1 < r2 && Math.abs(buffer[r1]) < thres) r1++;
+
+            // Encontra o fim do sinal significativo
             while (r2 > r1 && Math.abs(buffer[r2]) < thres) r2--;
 
-            return sampleRate / r2;
+            // Calcula o período do sinal
+            let period = r2 - r1;
+            if (period <= 0) return -1;
+
+            return sampleRate / period;
         }
 
         function goBack() {
@@ -304,4 +336,5 @@
         }
     </script>
 </body>
+
 </html>
